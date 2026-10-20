@@ -30,7 +30,7 @@ function Login({ onLogin, onBack }) {
       const data = await response.json()
 
       if (!response.ok) {
-        setMessage(data.message || 'Email atau password salah.')
+        setMessage(data.message || 'Email atau password Salah, Periksa Kembali.')
         setLoading(false)
         return
       }
