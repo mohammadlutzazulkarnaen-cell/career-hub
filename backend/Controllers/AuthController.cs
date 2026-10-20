@@ -38,7 +38,7 @@ namespace backend.Controllers
             {
                 return BadRequest(new
                 {
-                    message = "Email sudah digunakan."
+                    message = "Email sudah terdaftar, silakan login."
                 });
             }
 

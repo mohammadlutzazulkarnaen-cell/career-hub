@@ -20,7 +20,6 @@ namespace backend.Controllers
             _context = context;
         }
 
-        // GET: api/applications/my
         [HttpGet("my")]
         public IActionResult GetMyApplications()
         {
@@ -59,7 +58,7 @@ namespace backend.Controllers
             return Ok(applications);
         }
 
-        // GET: api/applications/job/2
+        [Authorize(Roles = "2")]
         [HttpGet("job/{jobId}")]
         public IActionResult GetApplicationsForJob(int jobId)
         {
@@ -75,7 +74,8 @@ namespace backend.Controllers
                 });
             }
 
-            var job = _context.Jobs.FirstOrDefault(j => j.JobId == jobId);
+            var job = _context.Jobs
+                .FirstOrDefault(j => j.JobId == jobId);
 
             if (job == null)
             {
@@ -115,7 +115,7 @@ namespace backend.Controllers
             return Ok(applications);
         }
 
-        // PUT: api/applications/1/status
+        [Authorize(Roles = "2")]
         [HttpPut("{applicationId}/status")]
         public IActionResult UpdateApplicationStatus(
             int applicationId,
@@ -145,7 +145,8 @@ namespace backend.Controllers
                 });
             }
 
-            if (application.Job == null || application.Job.UserId != userId)
+            if (application.Job == null ||
+                application.Job.UserId != userId)
             {
                 return StatusCode(403, new
                 {
@@ -153,9 +154,18 @@ namespace backend.Controllers
                 });
             }
 
+            if (string.IsNullOrWhiteSpace(request.Status))
+            {
+                return BadRequest(new
+                {
+                    message = "Status wajib diisi."
+                });
+            }
+
             var newStatus = request.Status.Trim().ToLower();
 
-            if (newStatus != "accepted" && newStatus != "rejected")
+            if (newStatus != "accepted" &&
+                newStatus != "rejected")
             {
                 return BadRequest(new
                 {
@@ -164,7 +174,9 @@ namespace backend.Controllers
             }
 
             application.Status =
-                newStatus == "accepted" ? "Accepted" : "Rejected";
+                newStatus == "accepted"
+                    ? "Accepted"
+                    : "Rejected";
 
             _context.SaveChanges();
 

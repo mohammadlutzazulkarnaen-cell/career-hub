@@ -20,7 +20,6 @@ namespace backend.Controllers
             _context = context;
         }
 
-        // GET: api/jobs
         [HttpGet]
         [AllowAnonymous]
         public IActionResult GetJobs()
@@ -46,7 +45,6 @@ namespace backend.Controllers
             return Ok(jobs);
         }
 
-        // GET: api/jobs/search?keyword=backend
         [HttpGet("search")]
         [AllowAnonymous]
         public IActionResult SearchJobs(string? keyword)
@@ -86,7 +84,6 @@ namespace backend.Controllers
             return Ok(jobs);
         }
 
-        // GET: api/jobs/1
         [HttpGet("{id}")]
         [AllowAnonymous]
         public IActionResult GetJobById(int id)
@@ -120,7 +117,7 @@ namespace backend.Controllers
             return Ok(job);
         }
 
-        // POST: api/jobs
+        [Authorize(Roles = "2")]
         [HttpPost]
         public IActionResult CreateJob(CreateJobRequest request)
         {
@@ -144,7 +141,7 @@ namespace backend.Controllers
             {
                 return BadRequest(new
                 {
-                    message = "Judul, nama perusahaan, lokasi, tipe kerja, dan deskripsi wajib diisi."
+                    message = "Judul, perusahaan, lokasi, tipe kerja, dan deskripsi wajib diisi."
                 });
             }
 
@@ -181,7 +178,6 @@ namespace backend.Controllers
             });
         }
 
-        // POST: api/jobs/2/apply
         [HttpPost("{id}/apply")]
         public IActionResult ApplyJob(int id, ApplyJobRequest request)
         {
@@ -211,7 +207,7 @@ namespace backend.Controllers
             {
                 return BadRequest(new
                 {
-                    message = "Kamu tidak dapat melamar lowongan yang kamu buat sendiri."
+                    message = "Kamu tidak dapat melamar lowongan sendiri."
                 });
             }
 
@@ -251,7 +247,7 @@ namespace backend.Controllers
             });
         }
 
-        // PUT: api/jobs/1
+        [Authorize(Roles = "2")]
         [HttpPut("{id}")]
         public IActionResult UpdateJob(int id, UpdateJobRequest request)
         {
@@ -279,32 +275,7 @@ namespace backend.Controllers
 
             if (job.UserId != userId)
             {
-                return StatusCode(403, new
-                {
-                    message = "Kamu tidak memiliki izin untuk mengubah lowongan ini."
-                });
-            }
-
-            if (string.IsNullOrWhiteSpace(request.Title) ||
-                string.IsNullOrWhiteSpace(request.CompanyName) ||
-                string.IsNullOrWhiteSpace(request.Location) ||
-                string.IsNullOrWhiteSpace(request.JobType) ||
-                string.IsNullOrWhiteSpace(request.Description))
-            {
-                return BadRequest(new
-                {
-                    message = "Judul, nama perusahaan, lokasi, tipe kerja, dan deskripsi wajib diisi."
-                });
-            }
-
-            if (request.SalaryMin.HasValue &&
-                request.SalaryMax.HasValue &&
-                request.SalaryMin > request.SalaryMax)
-            {
-                return BadRequest(new
-                {
-                    message = "Gaji minimum tidak boleh lebih besar dari gaji maksimum."
-                });
+                return Forbid();
             }
 
             job.Title = request.Title;
@@ -325,7 +296,7 @@ namespace backend.Controllers
             });
         }
 
-        // DELETE: api/jobs/1
+        [Authorize(Roles = "2")]
         [HttpDelete("{id}")]
         public IActionResult DeleteJob(int id)
         {
@@ -353,10 +324,7 @@ namespace backend.Controllers
 
             if (job.UserId != userId)
             {
-                return StatusCode(403, new
-                {
-                    message = "Kamu tidak memiliki izin untuk menghapus lowongan ini."
-                });
+                return Forbid();
             }
 
             _context.Jobs.Remove(job);
