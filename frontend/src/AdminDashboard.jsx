@@ -2,25 +2,28 @@ import { useEffect, useState } from 'react'
 
 const API_URL = 'http://localhost:5057'
 
+const emptyForm = {
+  title: '',
+  companyName: '',
+  location: '',
+  jobType: 'Full Time',
+  description: '',
+  requirements: '',
+  salaryMin: '',
+  salaryMax: '',
+}
+
 function AdminDashboard({ onBack }) {
   const token = localStorage.getItem('token')
 
   const [jobs, setJobs] = useState([])
   const [selectedJob, setSelectedJob] = useState(null)
   const [applicants, setApplicants] = useState([])
+  const [editingJob, setEditingJob] = useState(null)
+
+  const [form, setForm] = useState(emptyForm)
   const [message, setMessage] = useState('')
   const [loadingApplicants, setLoadingApplicants] = useState(false)
-
-  const [form, setForm] = useState({
-    title: '',
-    companyName: '',
-    location: '',
-    jobType: 'Full Time',
-    description: '',
-    requirements: '',
-    salaryMin: '',
-    salaryMax: '',
-  })
 
   useEffect(() => {
     let active = true
@@ -51,7 +54,17 @@ function AdminDashboard({ onBack }) {
   async function loadJobs() {
     const response = await fetch(`${API_URL}/api/jobs`)
     const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Gagal mengambil lowongan.')
+    }
+
     setJobs(data)
+  }
+
+  function resetForm() {
+    setEditingJob(null)
+    setForm(emptyForm)
   }
 
   function handleChange(event) {
@@ -61,13 +74,39 @@ function AdminDashboard({ onBack }) {
     })
   }
 
+  function editJob(job) {
+    setEditingJob(job)
+
+    setForm({
+      title: job.title || '',
+      companyName: job.companyName || '',
+      location: job.location || '',
+      jobType: job.jobType || 'Full Time',
+      description: job.description || '',
+      requirements: job.requirements || '',
+      salaryMin: job.salaryMin || '',
+      salaryMax: job.salaryMax || '',
+    })
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    })
+  }
+
   async function handleSubmit(event) {
     event.preventDefault()
     setMessage('')
 
+    const isEditing = Boolean(editingJob)
+
     try {
-      const response = await fetch(`${API_URL}/api/jobs`, {
-        method: 'POST',
+      const url = isEditing
+        ? `${API_URL}/api/jobs/${editingJob.jobId}`
+        : `${API_URL}/api/jobs`
+
+      const response = await fetch(url, {
+        method: isEditing ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -82,21 +121,55 @@ function AdminDashboard({ onBack }) {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.message || 'Gagal membuat lowongan.')
+        throw new Error(data.message || 'Gagal menyimpan lowongan.')
       }
 
-      setMessage('Lowongan berhasil dibuat.')
+      setMessage(
+        isEditing
+          ? 'Lowongan berhasil diperbarui.'
+          : 'Lowongan berhasil dibuat.'
+      )
 
-      setForm({
-        title: '',
-        companyName: '',
-        location: '',
-        jobType: 'Full Time',
-        description: '',
-        requirements: '',
-        salaryMin: '',
-        salaryMax: '',
+      resetForm()
+      await loadJobs()
+    } catch (error) {
+      setMessage(error.message)
+    }
+  }
+
+  async function deleteJob(jobId) {
+    const confirmed = window.confirm(
+      'Yakin ingin menghapus lowongan ini?'
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/jobs/${jobId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Gagal menghapus lowongan.')
+      }
+
+      setMessage('Lowongan berhasil dihapus.')
+
+      if (selectedJob?.jobId === jobId) {
+        setSelectedJob(null)
+        setApplicants([])
+      }
+
+      if (editingJob?.jobId === jobId) {
+        resetForm()
+      }
 
       await loadJobs()
     } catch (error) {
@@ -172,7 +245,9 @@ function AdminDashboard({ onBack }) {
 
       <div className="admin-container">
         <p className="eyebrow">AREA ADMIN</p>
+
         <h1>Dashboard Admin</h1>
+
         <p>Kelola lowongan dan pelamar CareerHub.</p>
 
         <form className="admin-form" onSubmit={handleSubmit}>
@@ -242,10 +317,26 @@ function AdminDashboard({ onBack }) {
             onChange={handleChange}
           />
 
-          <button type="submit">Tambah Lowongan</button>
+          <button type="submit">
+            {editingJob ? 'Simpan Perubahan' : 'Tambah Lowongan'}
+          </button>
+
+          {editingJob && (
+            <button
+              type="button"
+              className="cancel-edit-button"
+              onClick={resetForm}
+            >
+              Batal Edit
+            </button>
+          )}
         </form>
 
-        {message && <p className="auth-message">{message}</p>}
+        {message && (
+          <p className="auth-message">
+            {message}
+          </p>
+        )}
 
         <h2>Daftar Lowongan</h2>
 
@@ -253,8 +344,17 @@ function AdminDashboard({ onBack }) {
           {jobs.map((job) => (
             <div className="admin-job-item" key={job.jobId}>
               <h3>{job.title}</h3>
+
               <p>{job.companyName}</p>
+
               <span>{job.location}</span>
+
+              <button
+                className="edit-job-button"
+                onClick={() => editJob(job)}
+              >
+                Edit Lowongan
+              </button>
 
               <button
                 className="view-applicants-button"
@@ -262,13 +362,22 @@ function AdminDashboard({ onBack }) {
               >
                 Lihat Pelamar
               </button>
+
+              <button
+                className="delete-job-button"
+                onClick={() => deleteJob(job.jobId)}
+              >
+                Hapus Lowongan
+              </button>
             </div>
           ))}
         </div>
 
         {selectedJob && (
           <section className="applicants-section">
-            <h2>Pelamar: {selectedJob.title}</h2>
+            <h2>
+              Pelamar: {selectedJob.title}
+            </h2>
 
             {loadingApplicants ? (
               <p>Memuat pelamar...</p>
@@ -281,14 +390,26 @@ function AdminDashboard({ onBack }) {
                     className="applicant-card"
                     key={application.applicationId}
                   >
-                    <h3>{application.applicant.fullName}</h3>
-                    <p>{application.applicant.email}</p>
-                    <p>{application.applicant.phone || 'Nomor tidak tersedia'}</p>
+                    <h3>
+                      {application.applicant.fullName}
+                    </h3>
+
+                    <p>
+                      {application.applicant.email}
+                    </p>
+
+                    <p>
+                      {application.applicant.phone ||
+                        'Nomor tidak tersedia'}
+                    </p>
+
                     <p className="cover-letter">
                       {application.coverLetter}
                     </p>
 
-                    <strong>Status: {application.status}</strong>
+                    <strong>
+                      Status: {application.status}
+                    </strong>
 
                     <div className="applicant-actions">
                       <button

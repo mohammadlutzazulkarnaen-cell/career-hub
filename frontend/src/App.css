@@ -1180,3 +1180,46 @@
 .app.dark .cover-letter {
   background: #3a2b22;
 }
+
+.delete-job-button {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  background: #dc3545;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.delete-job-button:hover {
+  background: #b02a37;
+}
+
+.edit-job-button {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  background: #0d6efd;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.edit-job-button:hover {
+  background: #0b5ed7;
+}
+
+.cancel-edit-button {
+  grid-column: span 2;
+  padding: 10px;
+  border: 1px solid #999;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
