@@ -1239,3 +1239,73 @@
   color: white;
   border-color: #555;
 }
+
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin: 28px 0;
+}
+
+.stat-card {
+  padding: 20px;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07);
+}
+
+.stat-card span {
+  display: block;
+  color: #687080;
+}
+
+.stat-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 30px;
+}
+
+.stat-card.accepted strong {
+  color: #198754;
+}
+
+.stat-card.rejected strong {
+  color: #dc3545;
+}
+
+.app.dark .stat-card {
+  background: #242424;
+}
+
+@media (max-width: 700px) {
+  .admin-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.notification {
+  margin: 24px 0;
+  padding: 15px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.success-notification {
+  color: #146c43;
+  background: #d1e7dd;
+}
+
+.rejected-notification {
+  color: #842029;
+  background: #f8d7da;
+}
+
+.app.dark .success-notification {
+  color: #b7f0cf;
+  background: #164b32;
+}
+
+.app.dark .rejected-notification {
+  color: #ffb7bd;
+  background: #572126;
+}

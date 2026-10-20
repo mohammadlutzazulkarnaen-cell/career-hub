@@ -25,38 +25,19 @@ function AdminDashboard({ onBack }) {
   const [loadingApplicants, setLoadingApplicants] = useState(false)
   const [form, setForm] = useState(emptyForm)
 
+  const [stats, setStats] = useState({
+    totalJobs: 0,
+    totalApplicants: 0,
+    accepted: 0,
+    rejected: 0,
+  })
+
   const filteredApplicants =
     statusFilter === 'All'
       ? applicants
       : applicants.filter(
           (application) => application.status === statusFilter
         )
-
-  useEffect(() => {
-    let active = true
-
-    fetch(`${API_URL}/api/jobs`)
-      .then(async (response) => {
-        const data = await response.json()
-
-        if (!response.ok) {
-          throw new Error(data.message || 'Gagal mengambil lowongan.')
-        }
-
-        if (active) {
-          setJobs(data)
-        }
-      })
-      .catch((error) => {
-        if (active) {
-          setMessage(error.message)
-        }
-      })
-
-    return () => {
-      active = false
-    }
-  }, [])
 
   async function loadJobs() {
     const response = await fetch(`${API_URL}/api/jobs`)
@@ -67,7 +48,99 @@ function AdminDashboard({ onBack }) {
     }
 
     setJobs(data)
+
+    const applicantResults = await Promise.all(
+      data.map(async (job) => {
+        const applicantResponse = await fetch(
+          `${API_URL}/api/applications/job/${job.jobId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        )
+
+        if (!applicantResponse.ok) {
+          return []
+        }
+
+        return applicantResponse.json()
+      })
+    )
+
+    const allApplicants = applicantResults.flat()
+
+    setStats({
+      totalJobs: data.length,
+      totalApplicants: allApplicants.length,
+      accepted: allApplicants.filter(
+        (item) => item.status === 'Accepted'
+      ).length,
+      rejected: allApplicants.filter(
+        (item) => item.status === 'Rejected'
+      ).length,
+    })
   }
+
+  useEffect(() => {
+    let active = true
+
+    async function initialize() {
+      try {
+        const response = await fetch(`${API_URL}/api/jobs`)
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Gagal mengambil lowongan.')
+        }
+
+        const applicantResults = await Promise.all(
+          data.map(async (job) => {
+            const applicantResponse = await fetch(
+              `${API_URL}/api/applications/job/${job.jobId}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            )
+
+            if (!applicantResponse.ok) {
+              return []
+            }
+
+            return applicantResponse.json()
+          })
+        )
+
+        const allApplicants = applicantResults.flat()
+
+        if (active) {
+          setJobs(data)
+          setStats({
+            totalJobs: data.length,
+            totalApplicants: allApplicants.length,
+            accepted: allApplicants.filter(
+              (item) => item.status === 'Accepted'
+            ).length,
+            rejected: allApplicants.filter(
+              (item) => item.status === 'Rejected'
+            ).length,
+          })
+        }
+      } catch (error) {
+        if (active) {
+          setMessage(error.message)
+        }
+      }
+    }
+
+    initialize()
+
+    return () => {
+      active = false
+    }
+  }, [token])
 
   function handleChange(event) {
     setForm({
@@ -224,6 +297,8 @@ function AdminDashboard({ onBack }) {
       if (selectedJob) {
         await showApplicants(selectedJob)
       }
+
+      await loadJobs()
     } catch (error) {
       setMessage(error.message)
     }
@@ -239,6 +314,28 @@ function AdminDashboard({ onBack }) {
         <p className="eyebrow">AREA ADMIN</p>
         <h1>Dashboard Admin</h1>
         <p>Kelola lowongan dan pelamar CareerHub.</p>
+
+        <div className="admin-stats">
+          <div className="stat-card">
+            <span>Total Lowongan</span>
+            <strong>{stats.totalJobs}</strong>
+          </div>
+
+          <div className="stat-card">
+            <span>Total Pelamar</span>
+            <strong>{stats.totalApplicants}</strong>
+          </div>
+
+          <div className="stat-card accepted">
+            <span>Diterima</span>
+            <strong>{stats.accepted}</strong>
+          </div>
+
+          <div className="stat-card rejected">
+            <span>Ditolak</span>
+            <strong>{stats.rejected}</strong>
+          </div>
+        </div>
 
         <form className="admin-form" onSubmit={handleSubmit}>
           <input

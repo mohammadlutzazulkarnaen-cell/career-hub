@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 
+const API_URL = 'http://localhost:5057'
+
 function Applications({ onBack }) {
   const token = localStorage.getItem('token')
 
@@ -7,48 +9,60 @@ function Applications({ onBack }) {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
 
-  useEffect(() => {
-    if (!token) {
-      return
-    }
+useEffect(() => {
+  if (!token) {
+    return
+  }
 
-    const loadApplications = async () => {
-      try {
-        const response = await fetch(
-          'http://localhost:5057/api/applications/my',
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        )
+    let active = true
 
+    fetch(`${API_URL}/api/applications/my`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(async (response) => {
         const data = await response.json()
 
         if (!response.ok) {
-          throw new Error(
-            data.message || 'Gagal mengambil lamaran.'
-          )
+          throw new Error(data.message || 'Gagal mengambil lamaran.')
         }
 
-        setApplications(data)
-      } catch (error) {
-        setMessage(error.message)
-      } finally {
-        setLoading(false)
-      }
-    }
+        if (active) {
+          setApplications(data)
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          setMessage(error.message)
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false)
+        }
+      })
 
-    loadApplications()
+    return () => {
+      active = false
+    }
   }, [token])
 
-  return (
-    <div className="applications-page">
-      <div className="applications-container">
-        <button className="back-button" onClick={onBack}>
-          ← Kembali
-        </button>
+  const acceptedCount = applications.filter(
+    (application) => application.status === 'Accepted'
+  ).length
 
+  const rejectedCount = applications.filter(
+    (application) => application.status === 'Rejected'
+  ).length
+
+  return (
+    <main className="applications-page">
+      <button className="back-button" onClick={onBack}>
+        ← Kembali
+      </button>
+
+      <div className="applications-container">
         <p className="eyebrow">AKTIVITAS KAMU</p>
 
         <h1>Lamaran Saya</h1>
@@ -57,75 +71,74 @@ function Applications({ onBack }) {
           Pantau semua lowongan yang sudah kamu lamar.
         </p>
 
-        {!token && (
-          <p className="message">
-            Silakan login terlebih dahulu.
-          </p>
+        {acceptedCount > 0 && (
+          <div className="notification success-notification">
+            🎉 Ada {acceptedCount} lamaran yang diterima!
+          </div>
         )}
 
-        {token && loading && (
-          <p className="message">
-            Memuat lamaran...
-          </p>
+        {rejectedCount > 0 && (
+          <div className="notification rejected-notification">
+            Ada {rejectedCount} lamaran yang belum berhasil.
+          </div>
         )}
 
-        {token && !loading && message && (
-          <p className="message">
+        {message && (
+          <p className="error-message">
             {message}
           </p>
         )}
 
-        {token &&
-          !loading &&
-          !message &&
-          applications.length === 0 && (
-            <p className="message">
-              Kamu belum memiliki lamaran.
+        {loading ? (
+          <p>Memuat lamaran...</p>
+        ) : applications.length === 0 ? (
+          <div className="empty-applications">
+            <h2>Belum ada lamaran</h2>
+            <p>
+              Kamu belum melamar lowongan pekerjaan apa pun.
             </p>
-          )}
-
-        {token &&
-          !loading &&
-          !message &&
-          applications.length > 0 && (
-            <div className="applications-list">
-              {applications.map((application) => (
-                <article
-                  className="application-card"
-                  key={application.applicationId}
-                >
-                  <div>
-                    <span className="job-type">
-                      {application.job.jobType}
-                    </span>
-
-                    <h2>{application.job.title}</h2>
-
-                    <p>{application.job.companyName}</p>
-
-                    <p>
-                      📍 {application.job.location}
-                    </p>
-
-                    <small>
-                      Dikirim pada:{' '}
-                      {new Date(
-                        application.appliedAt
-                      ).toLocaleDateString('id-ID')}
-                    </small>
-                  </div>
-
-                  <span
-                    className={`application-status ${application.status.toLowerCase()}`}
-                  >
-                    {application.status}
+          </div>
+        ) : (
+          <div className="applications-list">
+            {applications.map((application) => (
+              <article
+                className="application-card"
+                key={application.applicationId}
+              >
+                <div className="application-content">
+                  <span className="job-type">
+                    {application.job?.jobType || 'Full Time'}
                   </span>
-                </article>
-              ))}
-            </div>
-          )}
+
+                  <h2>{application.job?.title}</h2>
+
+                  <p className="company-name">
+                    {application.job?.companyName}
+                  </p>
+
+                  <p className="job-location">
+                    📍 {application.job?.location}
+                  </p>
+
+                  <p className="applied-date">
+                    Dikirim pada:{' '}
+                    {new Date(
+                      application.appliedAt
+                    ).toLocaleDateString('id-ID')}
+                  </p>
+                </div>
+
+                <span
+                  className={`application-status status-${application.status.toLowerCase()}`}
+                >
+                  {application.status}
+                </span>
+              </article>
+            ))}
+          </div>
+        )}
       </div>
-    </div>
+    </main>
   )
 }
 
