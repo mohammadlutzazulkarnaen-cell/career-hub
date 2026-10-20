@@ -20,10 +20,17 @@ function AdminDashboard({ onBack }) {
   const [selectedJob, setSelectedJob] = useState(null)
   const [applicants, setApplicants] = useState([])
   const [editingJob, setEditingJob] = useState(null)
-
-  const [form, setForm] = useState(emptyForm)
+  const [statusFilter, setStatusFilter] = useState('All')
   const [message, setMessage] = useState('')
   const [loadingApplicants, setLoadingApplicants] = useState(false)
+  const [form, setForm] = useState(emptyForm)
+
+  const filteredApplicants =
+    statusFilter === 'All'
+      ? applicants
+      : applicants.filter(
+          (application) => application.status === statusFilter
+        )
 
   useEffect(() => {
     let active = true
@@ -62,16 +69,16 @@ function AdminDashboard({ onBack }) {
     setJobs(data)
   }
 
-  function resetForm() {
-    setEditingJob(null)
-    setForm(emptyForm)
-  }
-
   function handleChange(event) {
     setForm({
       ...form,
       [event.target.name]: event.target.value,
     })
+  }
+
+  function resetForm() {
+    setForm(emptyForm)
+    setEditingJob(null)
   }
 
   function editJob(job) {
@@ -88,10 +95,7 @@ function AdminDashboard({ onBack }) {
       salaryMax: job.salaryMax || '',
     })
 
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   async function handleSubmit(event) {
@@ -101,22 +105,23 @@ function AdminDashboard({ onBack }) {
     const isEditing = Boolean(editingJob)
 
     try {
-      const url = isEditing
-        ? `${API_URL}/api/jobs/${editingJob.jobId}`
-        : `${API_URL}/api/jobs`
-
-      const response = await fetch(url, {
-        method: isEditing ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          ...form,
-          salaryMin: form.salaryMin ? Number(form.salaryMin) : null,
-          salaryMax: form.salaryMax ? Number(form.salaryMax) : null,
-        }),
-      })
+      const response = await fetch(
+        isEditing
+          ? `${API_URL}/api/jobs/${editingJob.jobId}`
+          : `${API_URL}/api/jobs`,
+        {
+          method: isEditing ? 'PUT' : 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            ...form,
+            salaryMin: form.salaryMin ? Number(form.salaryMin) : null,
+            salaryMax: form.salaryMax ? Number(form.salaryMax) : null,
+          }),
+        }
+      )
 
       const data = await response.json()
 
@@ -138,11 +143,7 @@ function AdminDashboard({ onBack }) {
   }
 
   async function deleteJob(jobId) {
-    const confirmed = window.confirm(
-      'Yakin ingin menghapus lowongan ini?'
-    )
-
-    if (!confirmed) {
+    if (!window.confirm('Yakin ingin menghapus lowongan ini?')) {
       return
     }
 
@@ -161,16 +162,6 @@ function AdminDashboard({ onBack }) {
       }
 
       setMessage('Lowongan berhasil dihapus.')
-
-      if (selectedJob?.jobId === jobId) {
-        setSelectedJob(null)
-        setApplicants([])
-      }
-
-      if (editingJob?.jobId === jobId) {
-        resetForm()
-      }
-
       await loadJobs()
     } catch (error) {
       setMessage(error.message)
@@ -180,6 +171,7 @@ function AdminDashboard({ onBack }) {
   async function showApplicants(job) {
     setSelectedJob(job)
     setApplicants([])
+    setStatusFilter('All')
     setLoadingApplicants(true)
     setMessage('')
 
@@ -245,9 +237,7 @@ function AdminDashboard({ onBack }) {
 
       <div className="admin-container">
         <p className="eyebrow">AREA ADMIN</p>
-
         <h1>Dashboard Admin</h1>
-
         <p>Kelola lowongan dan pelamar CareerHub.</p>
 
         <form className="admin-form" onSubmit={handleSubmit}>
@@ -332,11 +322,7 @@ function AdminDashboard({ onBack }) {
           )}
         </form>
 
-        {message && (
-          <p className="auth-message">
-            {message}
-          </p>
-        )}
+        {message && <p className="auth-message">{message}</p>}
 
         <h2>Daftar Lowongan</h2>
 
@@ -344,9 +330,7 @@ function AdminDashboard({ onBack }) {
           {jobs.map((job) => (
             <div className="admin-job-item" key={job.jobId}>
               <h3>{job.title}</h3>
-
               <p>{job.companyName}</p>
-
               <span>{job.location}</span>
 
               <button
@@ -375,29 +359,32 @@ function AdminDashboard({ onBack }) {
 
         {selectedJob && (
           <section className="applicants-section">
-            <h2>
-              Pelamar: {selectedJob.title}
-            </h2>
+            <h2>Pelamar: {selectedJob.title}</h2>
+
+            <select
+              className="status-filter"
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+            >
+              <option value="All">Semua Status</option>
+              <option value="Pending">Pending</option>
+              <option value="Accepted">Accepted</option>
+              <option value="Rejected">Rejected</option>
+            </select>
 
             {loadingApplicants ? (
               <p>Memuat pelamar...</p>
-            ) : applicants.length === 0 ? (
-              <p>Belum ada pelamar untuk lowongan ini.</p>
+            ) : filteredApplicants.length === 0 ? (
+              <p>Tidak ada pelamar dengan status tersebut.</p>
             ) : (
               <div className="applicants-list">
-                {applicants.map((application) => (
+                {filteredApplicants.map((application) => (
                   <div
                     className="applicant-card"
                     key={application.applicationId}
                   >
-                    <h3>
-                      {application.applicant.fullName}
-                    </h3>
-
-                    <p>
-                      {application.applicant.email}
-                    </p>
-
+                    <h3>{application.applicant.fullName}</h3>
+                    <p>{application.applicant.email}</p>
                     <p>
                       {application.applicant.phone ||
                         'Nomor tidak tersedia'}
@@ -407,9 +394,7 @@ function AdminDashboard({ onBack }) {
                       {application.coverLetter}
                     </p>
 
-                    <strong>
-                      Status: {application.status}
-                    </strong>
+                    <strong>Status: {application.status}</strong>
 
                     <div className="applicant-actions">
                       <button

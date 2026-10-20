@@ -1223,3 +1223,19 @@
   background: transparent;
   cursor: pointer;
 }
+
+.status-filter {
+  margin: 10px 0 20px;
+  padding: 10px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  color: #252525;
+  cursor: pointer;
+}
+
+.app.dark .status-filter {
+  background: #303030;
+  color: white;
+  border-color: #555;
+}
