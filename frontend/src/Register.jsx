@@ -7,7 +7,12 @@ function Register({ onBack, onLogin }) {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] =
+    useState(false)
+
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
 
@@ -23,6 +28,11 @@ function Register({ onBack, onLogin }) {
       setMessage(
         'Password minimal 6 karakter dan harus mengandung huruf serta angka.'
       )
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setMessage('Konfirmasi password tidak sama.')
       return
     }
 
@@ -45,9 +55,7 @@ function Register({ onBack, onLogin }) {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(
-          data.message || 'Registrasi gagal.'
-        )
+        throw new Error(data.message || 'Registrasi gagal.')
       }
 
       alert(
@@ -112,7 +120,9 @@ function Register({ onBack, onLogin }) {
             id="register-phone"
             type="text"
             value={phone}
-            onChange={(event) => setPhone(event.target.value)}
+            onChange={(event) =>
+              setPhone(event.target.value)
+            }
             placeholder="Masukkan nomor telepon"
             required
           />
@@ -141,6 +151,39 @@ function Register({ onBack, onLogin }) {
               }
             >
               {showPassword ? '🙈' : '👁️'}
+            </button>
+          </div>
+
+          <label htmlFor="confirm-password">
+            Konfirmasi password
+          </label>
+
+          <div className="password-input-wrap">
+            <input
+              id="confirm-password"
+              type={
+                showConfirmPassword
+                  ? 'text'
+                  : 'password'
+              }
+              value={confirmPassword}
+              onChange={(event) =>
+                setConfirmPassword(event.target.value)
+              }
+              placeholder="Ulangi password"
+              required
+            />
+
+            <button
+              type="button"
+              className="password-toggle"
+              onClick={() =>
+                setShowConfirmPassword(
+                  (value) => !value
+                )
+              }
+            >
+              {showConfirmPassword ? '🙈' : '👁️'}
             </button>
           </div>
 
