@@ -1419,3 +1419,36 @@
 .cv-link:hover {
   text-decoration: underline;
 }
+
+.cv-link {
+  display: block;
+  width: fit-content;
+  margin: 14px 0 10px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 7px;
+  color: white;
+  background: #f47721;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.cv-link:hover {
+  background: #d95f0e;
+}
+
+.download-cv-button {
+  display: block;
+  margin: 8px 0 14px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 7px;
+  color: white;
+  background: #198754;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.download-cv-button:hover {
+  background: #146c43;
+}

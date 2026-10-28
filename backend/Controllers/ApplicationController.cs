@@ -14,10 +14,14 @@ namespace backend.Controllers
     public class ApplicationController : ControllerBase
     {
         private readonly CareerHubContext _context;
+        private readonly IWebHostEnvironment _environment;
 
-        public ApplicationController(CareerHubContext context)
+        public ApplicationController(
+            CareerHubContext context,
+            IWebHostEnvironment environment)
         {
             _context = context;
+            _environment = environment;
         }
 
         [HttpGet("my")]
@@ -88,10 +92,7 @@ namespace backend.Controllers
 
             if (job.UserId != userId)
             {
-                return StatusCode(403, new
-                {
-                    message = "Kamu bukan pemilik lowongan ini."
-                });
+                return Forbid();
             }
 
             var applications = _context.JobApplications
@@ -137,7 +138,8 @@ namespace backend.Controllers
 
             var application = _context.JobApplications
                 .Include(a => a.Job)
-                .FirstOrDefault(a => a.ApplicationId == applicationId);
+                .FirstOrDefault(a =>
+                    a.ApplicationId == applicationId);
 
             if (application == null)
             {
@@ -150,10 +152,7 @@ namespace backend.Controllers
             if (application.Job == null ||
                 application.Job.UserId != userId)
             {
-                return StatusCode(403, new
-                {
-                    message = "Kamu bukan pemilik lowongan ini."
-                });
+                return Forbid();
             }
 
             if (string.IsNullOrWhiteSpace(request.Status))
@@ -194,6 +193,59 @@ namespace backend.Controllers
                     application.AppliedAt
                 }
             });
+        }
+
+        [Authorize(Roles = "2")]
+        [HttpGet("{applicationId}/cv")]
+        public IActionResult GetCv(int applicationId)
+        {
+            var application = _context.JobApplications
+                .FirstOrDefault(a =>
+                    a.ApplicationId == applicationId);
+
+            if (application == null ||
+                string.IsNullOrWhiteSpace(application.CvFilePath))
+            {
+                return NotFound(new
+                {
+                    message = "CV tidak ditemukan."
+                });
+            }
+
+            var relativePath = application.CvFilePath
+                .TrimStart('/')
+                .Replace('/', Path.DirectorySeparatorChar);
+
+            var filePath = Path.Combine(
+                _environment.WebRootPath ?? "wwwroot",
+                relativePath
+            );
+
+            if (!System.IO.File.Exists(filePath))
+            {
+                return NotFound(new
+                {
+                    message = "File CV tidak ditemukan."
+                });
+            }
+
+            var extension = Path
+                .GetExtension(filePath)
+                .ToLowerInvariant();
+
+            var contentType = extension switch
+            {
+                ".png" => "image/png",
+                ".jpg" => "image/jpeg",
+                ".jpeg" => "image/jpeg",
+                _ => "application/octet-stream"
+            };
+
+            return PhysicalFile(
+                filePath,
+                contentType,
+                enableRangeProcessing: true
+            );
         }
     }
 }

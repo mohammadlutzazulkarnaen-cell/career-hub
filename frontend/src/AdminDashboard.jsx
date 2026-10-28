@@ -39,49 +39,6 @@ function AdminDashboard({ onBack }) {
           (application) => application.status === statusFilter
         )
 
-  async function loadJobs() {
-    const response = await fetch(`${API_URL}/api/jobs`)
-    const data = await response.json()
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Gagal mengambil lowongan.')
-    }
-
-    setJobs(data)
-
-    const applicantResults = await Promise.all(
-      data.map(async (job) => {
-        const response = await fetch(
-          `${API_URL}/api/applications/job/${job.jobId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        )
-
-        if (!response.ok) {
-          return []
-        }
-
-        return response.json()
-      })
-    )
-
-    const allApplicants = applicantResults.flat()
-
-    setStats({
-      totalJobs: data.length,
-      totalApplicants: allApplicants.length,
-      accepted: allApplicants.filter(
-        (item) => item.status === 'Accepted'
-      ).length,
-      rejected: allApplicants.filter(
-        (item) => item.status === 'Rejected'
-      ).length,
-    })
-  }
-
   useEffect(() => {
     let active = true
 
@@ -141,6 +98,49 @@ function AdminDashboard({ onBack }) {
       active = false
     }
   }, [token])
+
+  async function loadJobs() {
+    const response = await fetch(`${API_URL}/api/jobs`)
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Gagal mengambil lowongan.')
+    }
+
+    setJobs(data)
+
+    const applicantResults = await Promise.all(
+      data.map(async (job) => {
+        const response = await fetch(
+          `${API_URL}/api/applications/job/${job.jobId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        )
+
+        if (!response.ok) {
+          return []
+        }
+
+        return response.json()
+      })
+    )
+
+    const allApplicants = applicantResults.flat()
+
+    setStats({
+      totalJobs: data.length,
+      totalApplicants: allApplicants.length,
+      accepted: allApplicants.filter(
+        (item) => item.status === 'Accepted'
+      ).length,
+      rejected: allApplicants.filter(
+        (item) => item.status === 'Rejected'
+      ).length,
+    })
+  }
 
   function handleChange(event) {
     setForm({
@@ -275,6 +275,62 @@ function AdminDashboard({ onBack }) {
     }
   }
 
+  async function openCv(applicationId) {
+    try {
+      const response = await fetch(
+        `${API_URL}/api/applications/${applicationId}/cv`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error('CV tidak dapat dibuka.')
+      }
+
+      const blob = await response.blob()
+      const fileUrl = URL.createObjectURL(blob)
+
+      window.open(fileUrl, '_blank')
+    } catch (error) {
+      setMessage(error.message)
+    }
+  }
+
+  async function downloadCv(applicationId) {
+    try {
+      const response = await fetch(
+        `${API_URL}/api/applications/${applicationId}/cv`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error('CV tidak dapat diunduh.')
+      }
+
+      const blob = await response.blob()
+      const fileUrl = URL.createObjectURL(blob)
+
+      const link = document.createElement('a')
+      link.href = fileUrl
+      link.download = `cv-pelamar-${applicationId}.png`
+
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+
+      URL.revokeObjectURL(fileUrl)
+    } catch (error) {
+      setMessage(error.message)
+    }
+  }
+
   async function updateStatus(applicationId, status) {
     try {
       const response = await fetch(
@@ -317,7 +373,6 @@ function AdminDashboard({ onBack }) {
         <p className="eyebrow">AREA ADMIN</p>
 
         <h1>Dashboard Admin</h1>
-
         <p>Kelola lowongan dan pelamar CareerHub.</p>
 
         <div className="admin-stats">
@@ -424,11 +479,7 @@ function AdminDashboard({ onBack }) {
           )}
         </form>
 
-        {message && (
-          <p className="auth-message">
-            {message}
-          </p>
-        )}
+        {message && <p className="auth-message">{message}</p>}
 
         <h2>Daftar Lowongan</h2>
 
@@ -465,9 +516,7 @@ function AdminDashboard({ onBack }) {
 
         {selectedJob && (
           <section className="applicants-section">
-            <h2>
-              Pelamar: {selectedJob.title}
-            </h2>
+            <h2>Pelamar: {selectedJob.title}</h2>
 
             <select
               className="status-filter"
@@ -491,13 +540,9 @@ function AdminDashboard({ onBack }) {
                     className="applicant-card"
                     key={application.applicationId}
                   >
-                    <h3>
-                      {application.applicant.fullName}
-                    </h3>
+                    <h3>{application.applicant.fullName}</h3>
 
-                    <p>
-                      {application.applicant.email}
-                    </p>
+                    <p>{application.applicant.email}</p>
 
                     <p>
                       {application.applicant.phone ||
@@ -509,19 +554,28 @@ function AdminDashboard({ onBack }) {
                     </p>
 
                     {application.cvFilePath && (
-                      <a
-                        className="cv-link"
-                        href={`${API_URL}${application.cvFilePath}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Lihat CV
-                      </a>
+                      <>
+                        <button
+                          className="cv-link"
+                          onClick={() =>
+                            openCv(application.applicationId)
+                          }
+                        >
+                          Lihat CV
+                        </button>
+
+                        <button
+                          className="download-cv-button"
+                          onClick={() =>
+                            downloadCv(application.applicationId)
+                          }
+                        >
+                          Download CV
+                        </button>
+                      </>
                     )}
 
-                    <strong>
-                      Status: {application.status}
-                    </strong>
+                    <strong>Status: {application.status}</strong>
 
                     <div className="applicant-actions">
                       <button
