@@ -9,10 +9,10 @@ function Applications({ onBack }) {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
 
-useEffect(() => {
-  if (!token) {
-    return
-  }
+  useEffect(() => {
+    if (!token) {
+      return
+    }
 
     let active = true
 
@@ -22,10 +22,24 @@ useEffect(() => {
       },
     })
       .then(async (response) => {
-        const data = await response.json()
+        const responseText = await response.text()
+
+        let data = {}
+
+        if (responseText) {
+          try {
+            data = JSON.parse(responseText)
+          } catch {
+            data = {}
+          }
+        }
 
         if (!response.ok) {
-          throw new Error(data.message || 'Gagal mengambil lamaran.')
+          throw new Error(
+            data.message ||
+              responseText ||
+              'Gagal mengambil lamaran.'
+          )
         }
 
         if (active) {
@@ -47,6 +61,60 @@ useEffect(() => {
       active = false
     }
   }, [token])
+
+  async function withdrawApplication(applicationId) {
+    const confirmed = window.confirm(
+      'Yakin ingin membatalkan lamaran ini?'
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/applications/${applicationId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      const responseText = await response.text()
+
+      let data = {}
+
+      if (responseText) {
+        try {
+          data = JSON.parse(responseText)
+        } catch {
+          data = {}
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            responseText ||
+            'Gagal membatalkan lamaran.'
+        )
+      }
+
+      setApplications((current) =>
+        current.filter(
+          (item) => item.applicationId !== applicationId
+        )
+      )
+
+      setMessage(
+        data.message || 'Lamaran berhasil dibatalkan.'
+      )
+    } catch (error) {
+      setMessage(error.message)
+    }
+  }
 
   const acceptedCount = applications.filter(
     (application) => application.status === 'Accepted'
@@ -84,7 +152,7 @@ useEffect(() => {
         )}
 
         {message && (
-          <p className="error-message">
+          <p className="auth-message">
             {message}
           </p>
         )}
@@ -126,6 +194,19 @@ useEffect(() => {
                       application.appliedAt
                     ).toLocaleDateString('id-ID')}
                   </p>
+
+                  {application.status === 'Pending' && (
+                    <button
+                      className="withdraw-button"
+                      onClick={() =>
+                        withdrawApplication(
+                          application.applicationId
+                        )
+                      }
+                    >
+                      Batalkan Lamaran
+                    </button>
+                  )}
                 </div>
 
                 <span

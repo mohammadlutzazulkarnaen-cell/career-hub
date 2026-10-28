@@ -247,5 +247,50 @@ namespace backend.Controllers
                 enableRangeProcessing: true
             );
         }
+
+        [HttpDelete("{applicationId}")]
+        public IActionResult WithdrawApplication(int applicationId)
+        {
+            var userIdClaim =
+                User.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
+                User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+
+            if (!int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized(new
+                {
+                    message = "Token tidak valid."
+                });
+            }
+
+            var application = _context.JobApplications
+                .FirstOrDefault(a =>
+                    a.ApplicationId == applicationId &&
+                    a.UserId == userId);
+
+            if (application == null)
+            {
+                return NotFound(new
+                {
+                    message = "Lamaran tidak ditemukan."
+                });
+            }
+
+            if (application.Status != "Pending")
+            {
+                return BadRequest(new
+                {
+                    message = "Lamaran yang sudah diproses tidak dapat dibatalkan."
+                });
+            }
+
+            _context.JobApplications.Remove(application);
+            _context.SaveChanges();
+
+            return Ok(new
+            {
+                message = "Lamaran berhasil dibatalkan."
+            });
+        }
     }
 }
