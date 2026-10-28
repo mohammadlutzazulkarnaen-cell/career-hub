@@ -42,6 +42,7 @@ namespace backend.Controllers
                 {
                     a.ApplicationId,
                     a.CoverLetter,
+                    a.CvFilePath,
                     a.Status,
                     a.AppliedAt,
                     job = new
@@ -100,6 +101,7 @@ namespace backend.Controllers
                 {
                     a.ApplicationId,
                     a.CoverLetter,
+                    a.CvFilePath,
                     a.Status,
                     a.AppliedAt,
                     applicant = new

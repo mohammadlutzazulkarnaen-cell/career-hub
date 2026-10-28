@@ -32,6 +32,11 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
 
+  const [applyJob, setApplyJob] = useState(null)
+  const [coverLetter, setCoverLetter] = useState('')
+  const [cvFile, setCvFile] = useState(null)
+  const [applyLoading, setApplyLoading] = useState(false)
+
   const isAdmin = Number(user?.roleId ?? user?.RoleId) === 2
 
   useEffect(() => {
@@ -117,7 +122,7 @@ function App() {
     }
   }
 
-  async function handleApply(job) {
+  function openApplyModal(job) {
     const token = localStorage.getItem('token')
 
     if (!token) {
@@ -125,28 +130,49 @@ function App() {
       return
     }
 
-    const coverLetter = window.prompt('Tulis pesan lamaran kamu:')
+    setApplyJob(job)
+    setCoverLetter('')
+    setCvFile(null)
+  }
 
-    if (coverLetter === null) {
-      return
-    }
+  function closeApplyModal() {
+    setApplyJob(null)
+    setCoverLetter('')
+    setCvFile(null)
+  }
+
+  async function submitApplication(event) {
+    event.preventDefault()
 
     if (!coverLetter.trim()) {
       alert('Pesan lamaran wajib diisi.')
       return
     }
 
+    if (!cvFile) {
+      alert('CV wajib dilampirkan.')
+      return
+    }
+
+    const token = localStorage.getItem('token')
+    const formData = new FormData()
+
+    formData.append('CoverLetter', coverLetter.trim())
+    formData.append('CvFile', cvFile)
+
     try {
-      const response = await fetch(`${API_URL}/api/jobs/${job.jobId}/apply`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          coverLetter: coverLetter.trim(),
-        }),
-      })
+      setApplyLoading(true)
+
+      const response = await fetch(
+        `${API_URL}/api/jobs/${applyJob.jobId}/apply`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      )
 
       const data = await response.json()
 
@@ -154,9 +180,12 @@ function App() {
         throw new Error(data.message || 'Gagal mengirim lamaran.')
       }
 
-      alert(data.message || 'Lamaran berhasil dikirim.')
+      alert('Lamaran dan CV berhasil dikirim.')
+      closeApplyModal()
     } catch (error) {
       alert(error.message)
+    } finally {
+      setApplyLoading(false)
     }
   }
 
@@ -253,7 +282,7 @@ function App() {
         <JobDetail
           job={selectedJob}
           onBack={() => setPage('home')}
-          onApply={handleApply}
+          onApply={openApplyModal}
           onBookmark={handleBookmark}
         />
       </div>
@@ -450,7 +479,7 @@ function App() {
                     className="apply-button"
                     onClick={(event) => {
                       event.stopPropagation()
-                      handleApply(job)
+                      openApplyModal(job)
                     }}
                   >
                     Lamar
@@ -461,6 +490,54 @@ function App() {
           )}
         </section>
       </main>
+
+      {applyJob && (
+        <div className="apply-modal-overlay">
+          <form className="apply-modal" onSubmit={submitApplication}>
+            <button
+              type="button"
+              className="modal-close"
+              onClick={closeApplyModal}
+            >
+              ×
+            </button>
+
+            <h2>Lamar {applyJob.title}</h2>
+
+            <label htmlFor="coverLetter">
+              Pesan lamaran
+            </label>
+
+            <textarea
+              id="coverLetter"
+              value={coverLetter}
+              onChange={(event) => setCoverLetter(event.target.value)}
+              placeholder="Tuliskan pesan lamaran kamu..."
+              required
+            />
+
+            <label htmlFor="cvFile">
+              Lampiran CV
+            </label>
+
+            <input
+              id="cvFile"
+              type="file"
+              accept=".jpg,.jpeg,.png"
+              onChange={(event) => setCvFile(event.target.files[0])}
+              required
+            />
+
+            <small>
+              Format JPG, JPEG, atau PNG. Maksimal 5 MB.
+            </small>
+
+            <button type="submit" disabled={applyLoading}>
+              {applyLoading ? 'Mengirim...' : 'Kirim Lamaran'}
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   )
 }

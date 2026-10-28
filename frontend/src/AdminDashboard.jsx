@@ -51,7 +51,7 @@ function AdminDashboard({ onBack }) {
 
     const applicantResults = await Promise.all(
       data.map(async (job) => {
-        const applicantResponse = await fetch(
+        const response = await fetch(
           `${API_URL}/api/applications/job/${job.jobId}`,
           {
             headers: {
@@ -60,11 +60,11 @@ function AdminDashboard({ onBack }) {
           }
         )
 
-        if (!applicantResponse.ok) {
+        if (!response.ok) {
           return []
         }
 
-        return applicantResponse.json()
+        return response.json()
       })
     )
 
@@ -96,7 +96,7 @@ function AdminDashboard({ onBack }) {
 
         const applicantResults = await Promise.all(
           data.map(async (job) => {
-            const applicantResponse = await fetch(
+            const response = await fetch(
               `${API_URL}/api/applications/job/${job.jobId}`,
               {
                 headers: {
@@ -105,11 +105,11 @@ function AdminDashboard({ onBack }) {
               }
             )
 
-            if (!applicantResponse.ok) {
+            if (!response.ok) {
               return []
             }
 
-            return applicantResponse.json()
+            return response.json()
           })
         )
 
@@ -168,7 +168,10 @@ function AdminDashboard({ onBack }) {
       salaryMax: job.salaryMax || '',
     })
 
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    })
   }
 
   async function handleSubmit(event) {
@@ -312,7 +315,9 @@ function AdminDashboard({ onBack }) {
 
       <div className="admin-container">
         <p className="eyebrow">AREA ADMIN</p>
+
         <h1>Dashboard Admin</h1>
+
         <p>Kelola lowongan dan pelamar CareerHub.</p>
 
         <div className="admin-stats">
@@ -419,7 +424,11 @@ function AdminDashboard({ onBack }) {
           )}
         </form>
 
-        {message && <p className="auth-message">{message}</p>}
+        {message && (
+          <p className="auth-message">
+            {message}
+          </p>
+        )}
 
         <h2>Daftar Lowongan</h2>
 
@@ -456,7 +465,9 @@ function AdminDashboard({ onBack }) {
 
         {selectedJob && (
           <section className="applicants-section">
-            <h2>Pelamar: {selectedJob.title}</h2>
+            <h2>
+              Pelamar: {selectedJob.title}
+            </h2>
 
             <select
               className="status-filter"
@@ -480,8 +491,14 @@ function AdminDashboard({ onBack }) {
                     className="applicant-card"
                     key={application.applicationId}
                   >
-                    <h3>{application.applicant.fullName}</h3>
-                    <p>{application.applicant.email}</p>
+                    <h3>
+                      {application.applicant.fullName}
+                    </h3>
+
+                    <p>
+                      {application.applicant.email}
+                    </p>
+
                     <p>
                       {application.applicant.phone ||
                         'Nomor tidak tersedia'}
@@ -491,7 +508,20 @@ function AdminDashboard({ onBack }) {
                       {application.coverLetter}
                     </p>
 
-                    <strong>Status: {application.status}</strong>
+                    {application.cvFilePath && (
+                      <a
+                        className="cv-link"
+                        href={`${API_URL}${application.cvFilePath}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Lihat CV
+                      </a>
+                    )}
+
+                    <strong>
+                      Status: {application.status}
+                    </strong>
 
                     <div className="applicant-actions">
                       <button

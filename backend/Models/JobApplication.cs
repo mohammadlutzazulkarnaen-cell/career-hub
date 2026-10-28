@@ -10,6 +10,8 @@ namespace backend.Models
 
         public string? CoverLetter { get; set; }
 
+        public string? CvFilePath { get; set; }
+
         public string Status { get; set; } = "Pending";
 
         public DateTime AppliedAt { get; set; } = DateTime.UtcNow;

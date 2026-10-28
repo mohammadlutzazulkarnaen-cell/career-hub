@@ -86,6 +86,9 @@ namespace backend.Migrations
                     b.Property<string>("CoverLetter")
                         .HasColumnType("text");
 
+                    b.Property<string>("CvFilePath")
+                        .HasColumnType("text");
+
                     b.Property<int>("JobId")
                         .HasColumnType("integer");
 

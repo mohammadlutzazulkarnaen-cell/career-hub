@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.IO;
 using backend.Data;
 using backend.DTOs;
 using backend.Models;
@@ -14,10 +16,14 @@ namespace backend.Controllers
     public class JobController : ControllerBase
     {
         private readonly CareerHubContext _context;
+        private readonly IWebHostEnvironment _environment;
 
-        public JobController(CareerHubContext context)
+        public JobController(
+            CareerHubContext context,
+            IWebHostEnvironment environment)
         {
             _context = context;
+            _environment = environment;
         }
 
         [HttpGet]
@@ -141,7 +147,7 @@ namespace backend.Controllers
             {
                 return BadRequest(new
                 {
-                    message = "Judul, perusahaan, lokasi, tipe kerja, dan deskripsi wajib diisi."
+                    message = "Data lowongan wajib diisi."
                 });
             }
 
@@ -179,7 +185,9 @@ namespace backend.Controllers
         }
 
         [HttpPost("{id}/apply")]
-        public IActionResult ApplyJob(int id, ApplyJobRequest request)
+        public IActionResult ApplyJob(
+            int id,
+            [FromForm] ApplyJobRequest request)
         {
             var userIdClaim =
                 User.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
@@ -193,7 +201,51 @@ namespace backend.Controllers
                 });
             }
 
-            var job = _context.Jobs.FirstOrDefault(j => j.JobId == id);
+            if (string.IsNullOrWhiteSpace(request.CoverLetter))
+            {
+                return BadRequest(new
+                {
+                    message = "Pesan lamaran wajib diisi."
+                });
+            }
+
+            if (request.CvFile == null || request.CvFile.Length == 0)
+            {
+                return BadRequest(new
+                {
+                    message = "CV wajib dilampirkan."
+                });
+            }
+
+            var allowedExtensions = new[]
+            {
+                ".jpg",
+                ".jpeg",
+                ".png"
+            };
+
+            var extension =
+                Path.GetExtension(request.CvFile.FileName)
+                    .ToLowerInvariant();
+
+            if (!allowedExtensions.Contains(extension))
+            {
+                return BadRequest(new
+                {
+                    message = "CV hanya boleh JPG, JPEG, atau PNG."
+                });
+            }
+
+            if (request.CvFile.Length > 5 * 1024 * 1024)
+            {
+                return BadRequest(new
+                {
+                    message = "Ukuran CV maksimal 5 MB."
+                });
+            }
+
+            var job = _context.Jobs
+                .FirstOrDefault(j => j.JobId == id);
 
             if (job == null)
             {
@@ -212,7 +264,8 @@ namespace backend.Controllers
             }
 
             var alreadyApplied = _context.JobApplications.Any(a =>
-                a.JobId == id && a.UserId == userId);
+                a.JobId == id &&
+                a.UserId == userId);
 
             if (alreadyApplied)
             {
@@ -222,11 +275,30 @@ namespace backend.Controllers
                 });
             }
 
+            var uploadFolder = Path.Combine(
+                _environment.WebRootPath ?? "wwwroot",
+                "uploads",
+                "cv"
+            );
+
+            Directory.CreateDirectory(uploadFolder);
+
+            var fileName = $"{Guid.NewGuid()}{extension}";
+            var filePath = Path.Combine(uploadFolder, fileName);
+
+            using (var stream = new FileStream(
+                filePath,
+                FileMode.Create))
+            {
+                request.CvFile.CopyTo(stream);
+            }
+
             var application = new JobApplication
             {
                 JobId = id,
                 UserId = userId,
-                CoverLetter = request.CoverLetter
+                CoverLetter = request.CoverLetter.Trim(),
+                CvFilePath = $"/uploads/cv/{fileName}"
             };
 
             _context.JobApplications.Add(application);
@@ -241,6 +313,7 @@ namespace backend.Controllers
                     application.JobId,
                     application.UserId,
                     application.CoverLetter,
+                    application.CvFilePath,
                     application.Status,
                     application.AppliedAt
                 }
@@ -249,7 +322,9 @@ namespace backend.Controllers
 
         [Authorize(Roles = "2")]
         [HttpPut("{id}")]
-        public IActionResult UpdateJob(int id, UpdateJobRequest request)
+        public IActionResult UpdateJob(
+            int id,
+            UpdateJobRequest request)
         {
             var userIdClaim =
                 User.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
@@ -263,7 +338,8 @@ namespace backend.Controllers
                 });
             }
 
-            var job = _context.Jobs.FirstOrDefault(j => j.JobId == id);
+            var job = _context.Jobs
+                .FirstOrDefault(j => j.JobId == id);
 
             if (job == null)
             {
@@ -276,6 +352,28 @@ namespace backend.Controllers
             if (job.UserId != userId)
             {
                 return Forbid();
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Title) ||
+                string.IsNullOrWhiteSpace(request.CompanyName) ||
+                string.IsNullOrWhiteSpace(request.Location) ||
+                string.IsNullOrWhiteSpace(request.JobType) ||
+                string.IsNullOrWhiteSpace(request.Description))
+            {
+                return BadRequest(new
+                {
+                    message = "Data lowongan wajib diisi."
+                });
+            }
+
+            if (request.SalaryMin.HasValue &&
+                request.SalaryMax.HasValue &&
+                request.SalaryMin > request.SalaryMax)
+            {
+                return BadRequest(new
+                {
+                    message = "Gaji minimum tidak boleh lebih besar dari gaji maksimum."
+                });
             }
 
             job.Title = request.Title;
@@ -312,7 +410,8 @@ namespace backend.Controllers
                 });
             }
 
-            var job = _context.Jobs.FirstOrDefault(j => j.JobId == id);
+            var job = _context.Jobs
+                .FirstOrDefault(j => j.JobId == id);
 
             if (job == null)
             {
