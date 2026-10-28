@@ -1,97 +1,126 @@
 import { useState } from 'react'
 
-function Login({ onLogin, onBack }) {
+const API_URL = 'http://localhost:5057'
+
+function Login({ onBack, onLogin, onRegister }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [message, setMessage] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
 
-  const handleSubmit = async (event) => {
+  async function handleSubmit(event) {
     event.preventDefault()
-
-    setLoading(true)
     setMessage('')
 
     try {
-      const response = await fetch(
-        'http://localhost:5057/api/auth/login',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email,
-            password,
-          }),
-        }
-      )
+      setLoading(true)
+
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      })
 
       const data = await response.json()
 
       if (!response.ok) {
-        setMessage(data.message || 'Email atau password Salah, Periksa Kembali.')
-        setLoading(false)
-        return
+        throw new Error(
+          data.message || 'Email atau password salah.'
+        )
       }
 
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
 
-      setMessage('Login berhasil.')
-
-      if (onLogin) {
-        onLogin(data.user)
-      }
-    } catch {
-      setMessage('Backend belum aktif.')
+      onLogin(data.user)
+    } catch (error) {
+      setMessage(error.message)
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   return (
-    <div className="auth-page">
+    <main className="auth-page">
       <div className="auth-card">
         <button className="back-button" onClick={onBack}>
           ← Kembali
         </button>
 
-        <h1>
-          Masuk ke Career<span>Hub</span>
-        </h1>
+        <p className="eyebrow">SELAMAT DATANG KEMBALI</p>
+
+        <h1>Masuk ke CareerHub</h1>
 
         <p className="auth-subtitle">
           Masuk untuk melamar dan menyimpan lowongan.
         </p>
 
-        <form onSubmit={handleSubmit}>
-          <label>Email</label>
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <label htmlFor="login-email">Email</label>
+
           <input
+            id="login-email"
             type="email"
-            placeholder="Masukkan email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
+            placeholder="Masukkan email"
             required
           />
 
-          <label>Password</label>
-          <input
-            type="password"
-            placeholder="Masukkan password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
+          <label htmlFor="login-password">Password</label>
 
-          <button className="auth-submit" type="submit" disabled={loading}>
-            {loading ? 'Sedang masuk...' : 'Masuk'}
+          <div className="password-input-wrap">
+            <input
+              id="login-password"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(event) =>
+                setPassword(event.target.value)
+              }
+              placeholder="Masukkan password"
+              required
+            />
+
+            <button
+              type="button"
+              className="password-toggle"
+              onClick={() =>
+                setShowPassword((value) => !value)
+              }
+            >
+              {showPassword ? '🙈' : '👁️'}
+            </button>
+          </div>
+
+          <button
+            className="auth-submit"
+            type="submit"
+            disabled={loading}
+          >
+            {loading ? 'Memproses...' : 'Masuk'}
           </button>
         </form>
 
-        {message && <p className="auth-message">{message}</p>}
+        {message && (
+          <p className="auth-message">
+            {message}
+          </p>
+        )}
+
+        <p className="auth-switch">
+          Belum punya akun?{' '}
+          <button type="button" onClick={onRegister}>
+            Daftar sekarang
+          </button>
+        </p>
       </div>
-    </div>
+    </main>
   )
 }
 

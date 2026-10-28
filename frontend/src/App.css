@@ -1452,3 +1452,228 @@
 .download-cv-button:hover {
   background: #146c43;
 }
+
+.withdraw-button {
+  margin-top: 16px;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  background: #dc3545;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.withdraw-button:hover {
+  background: #b02a37;
+}
+
+.password-form {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid #e2e2e2;
+}
+
+.password-form h2 {
+  margin-bottom: 18px;
+  color: #252525;
+}
+
+.password-form label {
+  display: block;
+  margin: 12px 0 7px;
+  font-weight: 700;
+}
+
+.password-form input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d7d7d7;
+  border-radius: 8px;
+}
+
+.app.dark .password-form {
+  border-color: #555;
+}
+
+.app.dark .password-form h2 {
+  color: white;
+}
+
+.app.dark .password-form input {
+  color: white;
+  background: #303030;
+  border-color: #555;
+}
+
+.profile-page {
+  min-height: 100vh;
+  padding: 35px 20px 70px;
+  background: #f7f7f7;
+}
+
+.profile-card {
+  width: min(620px, 100%);
+  margin: 25px auto;
+  padding: 32px;
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.08);
+}
+
+.profile-header {
+  width: 100%;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.profile-header .eyebrow,
+.profile-header h1 {
+  text-align: center;
+}
+
+.profile-header h1 {
+  margin: 10px 0 0;
+  font-size: 36px;
+}
+
+.profile-avatar-large {
+  width: 110px;
+  height: 110px;
+  margin: 0 auto 25px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  color: white;
+  background: #f47721;
+  font-size: 42px;
+  font-weight: 700;
+}
+
+.profile-avatar-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-form,
+.profile-form,
+.password-form {
+  margin-top: 20px;
+}
+
+.photo-form {
+  padding: 20px;
+  background: #fff8f1;
+  border: 1px dashed #f47721;
+  border-radius: 12px;
+}
+
+.photo-form label,
+.profile-form label,
+.password-form label {
+  display: block;
+  margin: 14px 0 7px;
+  font-weight: 700;
+}
+
+.photo-form input[type='file'],
+.profile-form input,
+.password-form input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d8d8d8;
+  border-radius: 8px;
+  background: white;
+  color: #252525;
+}
+
+.photo-submit,
+.auth-submit {
+  margin-top: 14px;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  background: #f47721;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.photo-submit:hover,
+.auth-submit:hover {
+  background: #d95f0e;
+}
+
+.password-form {
+  padding-top: 25px;
+  border-top: 1px solid #e1e1e1;
+}
+
+.password-form h2 {
+  margin-bottom: 15px;
+}
+
+.app.dark .profile-page {
+  background: #171717;
+}
+
+.app.dark .profile-card {
+  background: #242424;
+}
+
+.app.dark .photo-form {
+  background: #3a2b22;
+}
+
+.app.dark .profile-form input,
+.app.dark .password-form input,
+.app.dark .photo-form input[type='file'] {
+  color: white;
+  background: #303030;
+  border-color: #555;
+}
+
+.password-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.password-input-wrap input {
+  padding-right: 48px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  padding: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.password-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.password-input-wrap input {
+  width: 100%;
+  padding-right: 48px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  padding: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+}

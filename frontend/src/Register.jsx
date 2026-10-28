@@ -1,123 +1,148 @@
 import { useState } from 'react'
 
-function Register({ onBack, onRegister }) {
+const API_URL = 'http://localhost:5057'
+
+function Register({ onBack, onLogin }) {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [phone, setPhone] = useState('')
-  const [message, setMessage] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
 
-  const handleSubmit = async (event) => {
+  async function handleSubmit(event) {
     event.preventDefault()
     setMessage('')
 
-    const passwordValid =
-      password.length >= 6 &&
-      /[A-Za-z]/.test(password) &&
-      /\d/.test(password)
-
-    if (!passwordValid) {
+    if (
+      password.length < 6 ||
+      !/[A-Za-z]/.test(password) ||
+      !/\d/.test(password)
+    ) {
       setMessage(
         'Password minimal 6 karakter dan harus mengandung huruf serta angka.'
       )
       return
     }
 
-    setLoading(true)
-
     try {
-      const response = await fetch(
-        'http://localhost:5057/api/auth/register',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            fullName,
-            email,
-            password,
-            phone,
-          }),
-        }
-      )
+      setLoading(true)
+
+      const response = await fetch(`${API_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fullName,
+          email,
+          phone,
+          password,
+        }),
+      })
 
       const data = await response.json()
 
       if (!response.ok) {
-        setMessage(
-          data.message ||
-          'Data belum valid. Periksa kembali isianmu.'
+        throw new Error(
+          data.message || 'Registrasi gagal.'
         )
-        setLoading(false)
-        return
       }
 
-      setMessage(
-        'Registrasi berhasil. Silakan login menggunakan akunmu.'
+      alert(
+        'Registrasi berhasil. Silakan login menggunakan akun kamu.'
       )
 
-      if (onRegister) {
-        onRegister()
-      }
-    } catch {
-      setMessage('Backend belum aktif.')
+      onLogin()
+    } catch (error) {
+      setMessage(error.message)
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   return (
-    <div className="auth-page">
+    <main className="auth-page">
       <div className="auth-card">
         <button className="back-button" onClick={onBack}>
           ← Kembali
         </button>
 
-        <h1>
-          Daftar di Career<span>Hub</span>
-        </h1>
+        <p className="eyebrow">BUAT AKUN BARU</p>
+
+        <h1>Daftar di CareerHub</h1>
 
         <p className="auth-subtitle">
-          Buat akun untuk mulai mencari pekerjaan.
+          Buat akun untuk mulai melamar pekerjaan.
         </p>
 
-        <form onSubmit={handleSubmit}>
-          <label>Nama lengkap</label>
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <label htmlFor="register-name">
+            Nama lengkap
+          </label>
+
           <input
+            id="register-name"
             type="text"
-            placeholder="Masukkan nama lengkap"
             value={fullName}
-            onChange={(event) => setFullName(event.target.value)}
+            onChange={(event) =>
+              setFullName(event.target.value)
+            }
+            placeholder="Masukkan nama lengkap"
             required
           />
 
-          <label>Email</label>
+          <label htmlFor="register-email">Email</label>
+
           <input
+            id="register-email"
             type="email"
-            placeholder="Masukkan email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
+            placeholder="Masukkan email"
             required
           />
 
-          <label>Password</label>
-          <input
-            type="password"
-            placeholder="Minimal 6 karakter, huruf dan angka"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
+          <label htmlFor="register-phone">
+            Nomor telepon
+          </label>
 
-          <label>Nomor telepon</label>
           <input
+            id="register-phone"
             type="text"
-            placeholder="Opsional"
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
+            placeholder="Masukkan nomor telepon"
+            required
           />
+
+          <label htmlFor="register-password">
+            Password
+          </label>
+
+          <div className="password-input-wrap">
+            <input
+              id="register-password"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(event) =>
+                setPassword(event.target.value)
+              }
+              placeholder="Minimal 6 karakter, huruf dan angka"
+              required
+            />
+
+            <button
+              type="button"
+              className="password-toggle"
+              onClick={() =>
+                setShowPassword((value) => !value)
+              }
+            >
+              {showPassword ? '🙈' : '👁️'}
+            </button>
+          </div>
 
           <button
             className="auth-submit"
@@ -128,9 +153,20 @@ function Register({ onBack, onRegister }) {
           </button>
         </form>
 
-        {message && <p className="auth-message">{message}</p>}
+        {message && (
+          <p className="auth-message">
+            {message}
+          </p>
+        )}
+
+        <p className="auth-switch">
+          Sudah punya akun?{' '}
+          <button type="button" onClick={onLogin}>
+            Masuk sekarang
+          </button>
+        </p>
       </div>
-    </div>
+    </main>
   )
 }
 

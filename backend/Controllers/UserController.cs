@@ -22,20 +22,23 @@ namespace backend.Controllers
             _environment = environment;
         }
 
-        // GET PROFILE
         [HttpGet("me")]
         public IActionResult GetProfile()
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
             if (email == null)
+            {
                 return Unauthorized();
+            }
 
-            var user = _context.Users.FirstOrDefault(
-                u => u.Email == email);
+            var user = _context.Users
+                .FirstOrDefault(u => u.Email == email);
 
             if (user == null)
+            {
                 return NotFound();
+            }
 
             return Ok(new
             {
@@ -49,7 +52,6 @@ namespace backend.Controllers
             });
         }
 
-        // UPDATE PROFILE
         [HttpPut("update")]
         public IActionResult UpdateProfile(
             UpdateProfileRequest request)
@@ -57,22 +59,34 @@ namespace backend.Controllers
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
             if (email == null)
+            {
                 return Unauthorized();
+            }
 
-            var user = _context.Users.FirstOrDefault(
-                u => u.Email == email);
+            var user = _context.Users
+                .FirstOrDefault(u => u.Email == email);
 
             if (user == null)
+            {
                 return NotFound();
+            }
 
-            user.FullName = request.FullName;
-            user.Phone = request.Phone;
+            if (string.IsNullOrWhiteSpace(request.FullName))
+            {
+                return BadRequest(new
+                {
+                    message = "Nama lengkap wajib diisi."
+                });
+            }
+
+            user.FullName = request.FullName.Trim();
+            user.Phone = request.Phone?.Trim();
 
             _context.SaveChanges();
 
             return Ok(new
             {
-                message = "Profile berhasil diperbarui.",
+                message = "Profil berhasil diperbarui.",
                 user = new
                 {
                     user.UserId,
@@ -84,7 +98,67 @@ namespace backend.Controllers
             });
         }
 
-        // UPLOAD FOTO PROFIL
+        [HttpPut("change-password")]
+        public IActionResult ChangePassword(
+            ChangePasswordRequest request)
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+            if (email == null)
+            {
+                return Unauthorized();
+            }
+
+            var user = _context.Users
+                .FirstOrDefault(u => u.Email == email);
+
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            if (string.IsNullOrWhiteSpace(request.CurrentPassword) ||
+                string.IsNullOrWhiteSpace(request.NewPassword))
+            {
+                return BadRequest(new
+                {
+                    message = "Password lama dan password baru wajib diisi."
+                });
+            }
+
+            if (!BCrypt.Net.BCrypt.Verify(
+                request.CurrentPassword,
+                user.PasswordHash))
+            {
+                return BadRequest(new
+                {
+                    message = "Password lama salah."
+                });
+            }
+
+            if (request.NewPassword.Length < 6 ||
+                !request.NewPassword.Any(char.IsLetter) ||
+                !request.NewPassword.Any(char.IsDigit))
+            {
+                return BadRequest(new
+                {
+                    message =
+                        "Password baru minimal 6 karakter dan harus mengandung huruf serta angka."
+                });
+            }
+
+            user.PasswordHash =
+                BCrypt.Net.BCrypt.HashPassword(
+                    request.NewPassword);
+
+            _context.SaveChanges();
+
+            return Ok(new
+            {
+                message = "Password berhasil diubah."
+            });
+        }
+
         [HttpPost("profile-picture")]
         public IActionResult UploadProfilePicture(
             IFormFile file)
@@ -92,13 +166,17 @@ namespace backend.Controllers
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
             if (email == null)
+            {
                 return Unauthorized();
+            }
 
-            var user = _context.Users.FirstOrDefault(
-                u => u.Email == email);
+            var user = _context.Users
+                .FirstOrDefault(u => u.Email == email);
 
             if (user == null)
+            {
                 return NotFound();
+            }
 
             if (file == null || file.Length == 0)
             {
@@ -124,8 +202,9 @@ namespace backend.Controllers
                 ".webp"
             };
 
-            var extension = Path.GetExtension(
-                file.FileName).ToLowerInvariant();
+            var extension = Path
+                .GetExtension(file.FileName)
+                .ToLowerInvariant();
 
             if (!allowedExtensions.Contains(extension))
             {
@@ -151,8 +230,7 @@ namespace backend.Controllers
 
             Directory.CreateDirectory(uploadFolder);
 
-            var fileName =
-                $"{Guid.NewGuid()}{extension}";
+            var fileName = $"{Guid.NewGuid()}{extension}";
 
             var filePath = Path.Combine(
                 uploadFolder,
