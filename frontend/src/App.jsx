@@ -431,7 +431,7 @@ return (
       <main>
         <section className="hero-section">
           <div className="hero-content">
-            <p className="eyebrow">TEMUKAN KARIER IMPIANMU</p>
+            <p className="eyebrow">TEMUKAN KARIER IMPIANMU DISINI</p>
 
             <h1>
               Temukan pekerjaan yang
